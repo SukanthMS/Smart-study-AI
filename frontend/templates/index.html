@@ -21,19 +21,22 @@
     <!-- Navigation Bar -->
     <nav class="glass-nav">
         <div class="logo">
-            <i class="fa-solid fa-brain nav-icon" style="background: var(--grad-primary); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i>
+            <i class="fa-solid fa-brain-circuit text-gradient"></i>
             <span>StudyAI</span>
         </div>
-        <ul class="nav-links">
-            <li><a href="#home" class="active"><i class="fa-solid fa-house"></i> Home</a></li>
-            <li><a href="#upload"><i class="fa-solid fa-upload"></i> Upload</a></li>
-            <li><a href="#notes"><i class="fa-solid fa-pen-to-square"></i> Notes</a></li>
-            <li><a href="#quiz"><i class="fa-solid fa-clipboard-question"></i> Quiz</a></li>
-            <li><a href="#dashboard"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
-        </ul>
-        <button id="theme-toggle" class="btn-icon">
-            <i class="fa-solid fa-circle-half-stroke"></i>
+        
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle Menu">
+            <i class="fa-solid fa-bars"></i>
         </button>
+
+        <ul class="nav-links" id="nav-links">
+            <li><a href="#" class="active" onclick="navigateTo('home')"><i class="fa-solid fa-house"></i> <span>Home</span></a></li>
+            <li><a href="#" onclick="navigateTo('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload</span></a></li>
+            <li><a href="#" onclick="navigateTo('notes')"><i class="fa-solid fa-pen-to-square"></i> <span>Notes</span></a></li>
+            <li><a href="#" onclick="navigateTo('quiz')"><i class="fa-solid fa-feather"></i> <span>Quiz</span></a></li>
+            <li><a href="#" onclick="navigateTo('dashboard')" class="btn-dashboard"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a></li>
+            <li class="nav-extra"><button id="theme-btn" class="btn-icon" title="Toggle Mode"><i class="fa-solid fa-moon"></i></button></li>
+        </ul>
     </nav>
 
     <main>

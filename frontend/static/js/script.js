@@ -10,6 +10,21 @@ function initApp() {
     setupNavigation();
     setupThemeToggle();
     setupDropZone();
+    const navToggle = document.getElementById('nav-toggle');
+    const navLinksList = document.getElementById('nav-links');
+    if (navToggle && navLinksList) {
+        navToggle.addEventListener('click', () => {
+            navLinksList.classList.toggle('active');
+        });
+        
+        // Close menu when a link is clicked
+        navLinksList.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinksList.classList.remove('active');
+            });
+        });
+    }
+
     setupHandlers();
     loadDashboard();
 }
