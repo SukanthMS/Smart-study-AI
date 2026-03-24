@@ -1,3 +1,7 @@
 Flask==3.0.2
 pypdf==4.1.0
 werkzeug==3.0.1
+groq
+flask-sqlalchemy
+psycopg2-binary
+python-dotenv

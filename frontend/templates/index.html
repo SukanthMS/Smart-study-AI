@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -21,8 +21,8 @@
     <!-- Navigation Bar -->
     <nav class="glass-nav">
         <div class="logo">
-            <i class="fa-solid fa-brain nav-icon"></i>
-            <span>Smart Study AI Assistant</span>
+            <i class="fa-solid fa-brain nav-icon" style="background: var(--grad-primary); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i>
+            <span>StudyAI</span>
         </div>
         <ul class="nav-links">
             <li><a href="#home" class="active"><i class="fa-solid fa-house"></i> Home</a></li>
@@ -30,97 +30,64 @@
             <li><a href="#notes"><i class="fa-solid fa-pen-to-square"></i> Notes</a></li>
             <li><a href="#quiz"><i class="fa-solid fa-clipboard-question"></i> Quiz</a></li>
             <li><a href="#dashboard"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
-            
-            <!-- Gamification Pill -->
-            <li class="nav-gamification" style="margin-left: 20px;">
-                <div class="level-pill glass-card" style="padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; border: 1px solid rgba(0,242,254,0.3); box-shadow: 0 0 15px rgba(0,242,254,0.1);">
-                    <i class="fa-solid fa-crown text-yellow"></i>
-                    <span id="nav-level-text">Lvl 1</span>
-                    <div class="xp-bar-mini" style="width: 70px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-left: 5px;">
-                        <div id="nav-xp-fill" style="width: 0%; height: 100%; background: var(--gradient-1); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-                    </div>
-                </div>
-            </li>
         </ul>
         <button id="theme-toggle" class="btn-icon">
-            <i class="fa-solid fa-sun"></i>
-        </button>
-        
-        <!-- Mobile Menu Toggle -->
-        <button class="mobile-toggle btn-icon">
-            <i class="fa-solid fa-bars"></i>
+            <i class="fa-solid fa-circle-half-stroke"></i>
         </button>
     </nav>
 
     <main>
         <!-- Home Section -->
         <section id="home" class="section-view active-view">
-            <div class="hero-content glass-panel">
-                <h1 class="gradient-text">Your Personal AI Study Companion</h1>
-                <p>Unlock your learning potential with AI-driven summaries, personalized quizzes, and intelligent study plans.</p>
+            <div class="hero-content">
+                <h1 class="massive-text gradient-text">Master Your Studies <br>Faster Than Ever.</h1>
+                <p>Harness the power of AI to transform your textbooks and notes into smart summaries, interactive quizzes, and adaptive learning plans.</p>
                 <div class="hero-buttons">
                     <button class="btn btn-primary" onclick="navigateTo('upload')">Get Started <i class="fa-solid fa-arrow-right"></i></button>
-                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')">View Progress</button>
+                    <button class="btn btn-view-progress" onclick="navigateTo('dashboard')">View Progress</button>
                 </div>
             </div>
             
             <div class="features-grid">
                 <div class="feature-card glass-panel">
-                    <i class="fa-solid fa-file-pdf feature-icon text-cyan"></i>
-                    <h3>Smart Upload</h3>
-                    <p>Analyze PDF documents and typed notes instantly.</p>
+                    <i class="fa-solid fa-wand-magic-sparkles feature-icon"></i>
+                    <h3>Smart Analysis</h3>
+                    <p>Deep document understanding powered by state-of-the-art AI.</p>
                 </div>
                 <div class="feature-card glass-panel">
-                    <i class="fa-solid fa-bolt feature-icon text-purple"></i>
-                    <h3>Auto Notes</h3>
-                    <p>Generate highly accurate summaries within seconds.</p>
+                    <i class="fa-solid fa-bolt feature-icon"></i>
+                    <h3>Instant Summaries</h3>
+                    <p>Condense complex topics into digestible, high-quality study notes.</p>
                 </div>
                 <div class="feature-card glass-panel">
-                    <i class="fa-solid fa-clipboard-check feature-icon text-blue"></i>
-                    <h3>Custom Quizzes</h3>
-                    <p>Test your knowledge with AI-generated questions.</p>
+                    <i class="fa-solid fa-brain feature-icon"></i>
+                    <h3>Adaptive Quizzing</h3>
+                    <p>Testing that evolves with your knowledge level.</p>
                 </div>
             </div>
 
             <div class="how-it-works mt-4">
-                <h2 style="text-align: center; margin-bottom: 2rem;">How <span class="gradient-text">StudyAI</span> Works</h2>
-                <div class="flow-container">
-                    <div class="flow-step">
-                        <div class="flow-icon-wrapper bg-blue">
-                            <i class="fa-solid fa-upload"></i>
-                        </div>
-                        <h4>1. Upload</h4>
-                        <p>Upload PDFs or paste your notes</p>
+                <h2 style="justify-content: center; margin-bottom: 3rem;">Master Any Topic in <span class="gradient-text">4 Simple Steps</span></h2>
+                <div class="flow-container" style="display: flex; justify-content: space-between; gap: 20px; text-align: center;">
+                    <div class="flow-step glass-card" style="flex: 1;">
+                        <h4 class="gradient-text">01</h4>
+                        <h4>Upload</h4>
+                        <p>Feed the AI your PDFs</p>
                     </div>
-                    <div class="flow-connector">
-                        <i class="fa-solid fa-chevron-right"></i>
+                    <div class="flow-step glass-card" style="flex: 1;">
+                        <h4 class="gradient-text">02</h4>
+                        <h4>Process</h4>
+                        <p>AI extracts core concepts</p>
                     </div>
-                    <div class="flow-step">
-                        <div class="flow-icon-wrapper bg-purple">
-                            <i class="fa-solid fa-brain"></i>
-                        </div>
-                        <h4>2. AI Analysis</h4>
-                        <p>Our AI processes and extracts key concepts</p>
+                    <div class="flow-step glass-card" style="flex: 1;">
+                        <h4 class="gradient-text">03</h4>
+                        <h4>Practice</h4>
+                        <p>Quiz yourself to perfection</p>
                     </div>
-                    <div class="flow-connector">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
-                    <div class="flow-step">
-                        <div class="flow-icon-wrapper bg-yellow">
-                            <i class="fa-solid fa-pen-fancy"></i>
-                        </div>
-                        <h4>3. Study</h4>
-                        <p>Get smart summaries and dynamic quizzes</p>
-                    </div>
-                    <div class="flow-connector">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
-                    <div class="flow-step">
-                        <div class="flow-icon-wrapper bg-green">
-                            <i class="fa-solid fa-trophy"></i>
-                        </div>
-                        <h4>4. Master</h4>
-                        <p>Track progress and identifying weak areas</p>
+                    <div class="flow-step glass-card" style="flex: 1;">
+                        <h4 class="gradient-text">04</h4>
+                        <h4>Master</h4>
+                        <p>Track your path to A+</p>
                     </div>
                 </div>
             </div>
@@ -129,7 +96,7 @@
         <!-- Upload Section -->
         <section id="upload" class="section-view">
             <div class="glass-panel section-container">
-                <h2><i class="fa-solid fa-cloud-arrow-up"></i> Upload Study Material</h2>
+                <h2><i class="fa-solid fa-cloud-arrow-up text-blue"></i> Upload Material</h2>
                 <div class="upload-area" id="drop-zone">
                     <i class="fa-solid fa-file-arrow-up upload-icon"></i>
                     <h3>Drag & Drop your PDF here</h3>
@@ -271,6 +238,6 @@
     </div>
 
     <!-- Script loaded at the end -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=2"></script>
 </body>
 </html>

@@ -35,9 +35,11 @@ function setupNavigation() {
         });
     });
 
-    mobileToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('show');
-    });
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('show');
+        });
+    }
 }
 
 function navigateTo(id) {
@@ -64,12 +66,31 @@ function setupThemeToggle() {
     const themeBtn = document.getElementById('theme-toggle');
     const root = document.documentElement;
 
+    // 1. Load saved theme or system preference
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    root.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
     themeBtn.addEventListener('click', () => {
         const currentTheme = root.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
         root.setAttribute('data-theme', newTheme);
-        themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme);
+        
+        // Refresh charts to match new theme colors
+        loadDashboard();
     });
+}
+
+function updateThemeIcon(theme) {
+    const themeBtn = document.getElementById('theme-toggle');
+    if (theme === 'dark') {
+        themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    } else {
+        themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+    }
 }
 
 // ---- Drop Zone Setup ----
@@ -122,60 +143,66 @@ function hideLoader() { document.getElementById('loader').classList.add('hidden'
 // ---- API Handlers ----
 function setupHandlers() {
     // 1. Upload
-    document.getElementById('upload-submit').addEventListener('click', async () => {
-        const textInput = document.getElementById('text-input').value;
-        const statusMsg = document.getElementById('upload-status');
-        
-        if (!uploadedFile && !textInput.trim()) {
-            alert('Please select a file or enter text');
-            return;
-        }
-
-        const formData = new FormData();
-        if (uploadedFile) formData.append('file', uploadedFile);
-        if (textInput) formData.append('text', textInput);
-
-        showLoader();
-        try {
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
+    const uploadBtn = document.getElementById('upload-submit');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', async () => {
+            const textInput = document.getElementById('text-input').value;
+            const statusMsg = document.getElementById('upload-status');
             
-            statusMsg.classList.remove('hidden');
-            if(res.ok) {
-                statusMsg.innerHTML = `<span class="text-cyan"><i class="fa-solid fa-check-circle"></i> ${data.message} (${data.char_count} chars analyzed).</span>`;
-                setTimeout(() => { navigateTo('notes'); }, 1500);
-            } else {
-                statusMsg.innerHTML = `<span style="color:red;"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error}</span>`;
+            if (!uploadedFile && !textInput.trim()) {
+                alert('Please select a file or enter text');
+                return;
             }
-        } catch (err) {
-            console.error(err);
-            alert('Upload failed.');
-        } finally {
-            hideLoader();
-        }
-    });
+
+            const formData = new FormData();
+            if (uploadedFile) formData.append('file', uploadedFile);
+            if (textInput) formData.append('text', textInput);
+
+            showLoader();
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                statusMsg.classList.remove('hidden');
+                if(res.ok) {
+                    statusMsg.innerHTML = `<span class="text-cyan"><i class="fa-solid fa-check-circle"></i> ${data.message} (${data.char_count} chars analyzed).</span>`;
+                    setTimeout(() => { navigateTo('notes'); }, 1500);
+                } else {
+                    statusMsg.innerHTML = `<span style="color:red;"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error}</span>`;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Upload failed.');
+            } finally {
+                hideLoader();
+            }
+        });
+    }
 
     // 2. Generate Notes
-    document.getElementById('generate-notes-btn').addEventListener('click', async () => {
-        showLoader();
-        try {
-            const res = await fetch('/api/generate_notes', { method: 'POST' });
-            const data = await res.json();
-            if(res.ok) {
-                document.getElementById('notes-result').classList.remove('hidden');
-                document.getElementById('notes-content').innerHTML = `
-                    <p><strong>Summary Details:</strong> Reduced text from ${data.original_length} to ${data.summary_length} characters.</p>
-                    <hr style="border-color:var(--glass-border); margin:15px 0;">
-                    <p style="white-space: pre-wrap; font-size:1.1rem; line-height:1.8;">${data.notes}</p>
-                `;
-            } else {
-                alert(data.error);
-            }
-        } catch(err) { console.error(err); } finally { hideLoader(); }
-    });
+    const notesBtn = document.getElementById('generate-notes-btn');
+    if (notesBtn) {
+        notesBtn.addEventListener('click', async () => {
+            showLoader();
+            try {
+                const res = await fetch('/api/generate_notes', { method: 'POST' });
+                const data = await res.json();
+                if(res.ok) {
+                    document.getElementById('notes-result').classList.remove('hidden');
+                    document.getElementById('notes-content').innerHTML = `
+                        <p><strong>Summary Details:</strong> Reduced text from ${data.original_length} to ${data.summary_length} characters.</p>
+                        <hr style="border-color:var(--glass-border); margin:15px 0;">
+                        <p style="white-space: pre-wrap; font-size:1.1rem; line-height:1.8;">${data.notes}</p>
+                    `;
+                } else {
+                    alert(data.error);
+                }
+            } catch(err) { console.error(err); } finally { hideLoader(); }
+        });
+    }
 
     // 2b. TTS and Copy for Notes
     document.getElementById('speak-notes').addEventListener('click', function() {
