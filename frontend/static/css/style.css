@@ -516,3 +516,111 @@ p {
     width: 65px;
     height: 65px;
 }
+
+/* ========================
+   DASHBOARD BOX COLORS (DEEP GLOW & ATTRACTIVE)
+   ======================== */
+.dashboard-grid .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Internal Glow Effect */
+.dashboard-grid .glass-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, var(--accent-glow) 0%, transparent 60%);
+    opacity: 0.12;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.dashboard-grid .chart-container:nth-child(1) { --accent-glow: #f09433; border-color: rgba(240, 148, 51, 0.4); box-shadow: 0 10px 40px -10px rgba(240, 148, 51, 0.2); }
+.dashboard-grid .chart-container:nth-child(2) { --accent-glow: #dc2743; border-color: rgba(220, 39, 67, 0.4); box-shadow: 0 10px 40px -10px rgba(220, 39, 67, 0.2); }
+.dashboard-grid .history-container { --accent-glow: #cc2366; border-color: rgba(204, 35, 102, 0.4); box-shadow: 0 10px 40px -10px rgba(204, 35, 102, 0.2); }
+.dashboard-grid .gamification-container { --accent-glow: #bc1888; border-color: rgba(188, 24, 136, 0.4); box-shadow: 0 10px 40px -10px rgba(188, 24, 136, 0.2); }
+
+/* Bold Headings & Icons */
+.dashboard-grid h3 {
+    position: relative;
+    z-index: 1;
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dashboard-grid .chart-container:nth-child(1) h3 { color: #f09433 !important; }
+.dashboard-grid .chart-container:nth-child(2) h3 { color: #dc2743 !important; }
+.dashboard-grid .history-container h3 { color: #cc2366 !important; }
+.dashboard-grid .gamification-container h3 { color: #bc1888 !important; }
+
+/* Dashboard Overall Atmosphere */
+#dashboard .glass-panel {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(252, 175, 69, 0.04) 50%, rgba(188, 24, 136, 0.04) 100%);
+    border-color: rgba(188, 24, 136, 0.1);
+}
+
+
+/* Chart Overrides for Visibility */
+.chart-container canvas {
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.05));
+    margin-top: 15px;
+}
+
+
+.dashboard-grid .glass-card:hover {
+    box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+    transform: translateY(-5px);
+}
+
+/* Specific Dashboard Sizing */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.dashboard-sidebar {
+    grid-column: span 2;
+}
+
+.chart-container {
+    padding: 20px !important;
+    max-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container canvas {
+    max-height: 250px !important;
+    width: 100% !important;
+}
+
+.chart-container h3 {
+    font-size: 1.1rem !important;
+    margin-bottom: 12px !important;
+}
+
+/* Make Weak Area distribution even more compact */
+.dashboard-grid .chart-container:nth-child(2) canvas {
+    max-height: 200px !important;
+}
+
+@media (max-width: 1000px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}

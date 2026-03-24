@@ -17,8 +17,26 @@ app = Flask(__name__, template_folder='../frontend/templates', static_folder='..
 app.secret_key = os.getenv('SECRET_KEY', 'super_secret_study_key')
 
 # Database Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+db_url = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Try PostgreSQL first, fallback to SQLite if needed
+try:
+    print(f"Attempting to test PostgreSQL: {db_url[:20]}...")
+    import psycopg2
+    # Test raw connection first with a short timeout
+    conn = psycopg2.connect(db_url, connect_timeout=3)
+    conn.close()
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    # Only PostgreSQL needs this specific timeout arg in SQLAlchemy
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": { "connect_timeout": 5 }
+    }
+    print("PostgreSQL connection verified!")
+except Exception as e:
+    print(f"Postgres unreachable ({e}). Falling back to Local SQLite...")
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///local_study.db'
 
 db = SQLAlchemy(app)
 
@@ -35,15 +53,18 @@ class UserProgress(db.Model):
     scores = db.Column(db.JSON, default=list)
     weak_areas = db.Column(db.JSON, default=list)
     badges = db.Column(db.JSON, default=list)
-
-# Initialize Database
+# Initialize Database schema
 with app.app_context():
-    db.create_all()
-    # Ensure at least one user exists for this demo
-    if not db.session.get(UserProgress, 1):
-        user = UserProgress(id=1)
-        db.session.add(user)
-        db.session.commit()
+    try:
+        db.create_all()
+        # Seed default user
+        if not db.session.get(UserProgress, 1):
+            user = UserProgress(id=1)
+            db.session.add(user)
+            db.session.commit()
+        print("Schema successfully created/verified.")
+    except Exception as e:
+        print(f"Schema creation failed: {e}")
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)

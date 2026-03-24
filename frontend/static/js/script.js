@@ -516,13 +516,13 @@ function renderChart(scores) {
     
     if (myChart) myChart.destroy();
     
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(0, 242, 254, 0.4)');
-    gradient.addColorStop(1, 'rgba(0, 242, 254, 0.0)');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(131, 58, 180, 0.4)');
+    gradient.addColorStop(1, 'rgba(131, 58, 180, 0.0)');
 
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-    const textColor = isDark ? '#94a3b8' : '#475569';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+    const textColor = isDark ? '#f8fafc' : '#0f172a';
 
     myChart = new Chart(ctx, {
         type: 'line',
@@ -531,16 +531,16 @@ function renderChart(scores) {
             datasets: [{
                 label: 'Quiz Score (%)',
                 data: displayScores,
-                borderColor: '#00f2fe',
-                borderWidth: 3,
+                borderColor: '#bc1888',
+                borderWidth: 4,
                 backgroundColor: gradient,
-                tension: 0.4,
+                tension: 0.45,
                 fill: true,
-                pointBackgroundColor: '#03040b',
-                pointBorderColor: '#00f2fe',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 8
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#833ab4',
+                pointBorderWidth: 3,
+                pointRadius: 6,
+                pointHoverRadius: 9
             }]
         },
         options: {
