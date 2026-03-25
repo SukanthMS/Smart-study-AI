@@ -109,57 +109,39 @@ def extract_text_from_pdf(filepath):
         return str(e)
 
 def generate_summary(text):
-    if not text or len(text.split()) < 30:
-        return text
+    if not text or len(text.split()) < 5:
+        return "Not enough content to summarize."
     
-    # Keeping local logic for instantaneous summaries
-    raw_paragraphs = [p.strip() for p in text.split('\n') if p.strip()]
-    if len(raw_paragraphs) < 2:
+    try:
+        # Attempt AI Summarization with Groq
+        response = client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": f"Summarize the following study material into well-structured, easy-to-read bullet points with bold key terms: \n\n{text[:15000]}"
+            }],
+            model="llama-3.3-70b-versatile",
+            temperature=0.5,
+            max_tokens=1000
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Groq AI Failed: {e}. Falling back to local summarizer...")
+        # Local Fallback (TF-IDF simple logic)
         sentences = re.split(r'(?<=[.!?]) +', text.replace('\n', ' '))
-        chunk_size = max(5, len(sentences) // 4)
-        raw_paragraphs = [" ".join(sentences[i:i + chunk_size]) for i in range(0, len(sentences), chunk_size)]
-
-    stop_words = set(["the", "is", "in", "and", "to", "of", "it", "that", "you", "a", "an", "for", "on", "with", "as", "by", "this", "are", "from", "be", "or", "which", "will", "can", "has", "have", "had", "were", "was"])
-    
-    all_sentences = re.split(r'(?<=[.!?]) +', text.replace('\n', ' '))
-    total_docs = max(1, len(all_sentences))
-    word_doc_count = Counter()
-    for sentence in all_sentences:
-        words = set(re.findall(r'\b[a-zA-Z]{3,}\b', sentence.lower()))
-        for w in words:
-            word_doc_count[w] += 1
-            
-    idf = {}
-    for kw, doc_count in word_doc_count.items():
-        idf[kw] = math.log(total_docs / doc_count) + 1
-    
-    final_summary_bullets = []
-    
-    for para in raw_paragraphs:
-        words_in_para = para.split()
-        if len(words_in_para) <= 8 and not para.endswith('.'):
-            final_summary_bullets.append(f"<strong class='text-cyan' style='font-size:1.2rem;'>{para}</strong>")
-            continue
-            
-        sentences = re.split(r'(?<=[.!?]) +', para)
-        if len(sentences) <= 2:
-            final_summary_bullets.append("• " + para)
-            continue
-            
-        sentence_scores = {}
-        for sentence in sentences:
-            score = 0
-            words = set(re.findall(r'\b[a-zA-Z]{3,}\b', sentence.lower()))
-            for word in words:
-                if word not in stop_words and word in idf:
-                    score += idf[word]
-            sentence_scores[sentence] = score / max(1, len(sentence.split()))
-
-        top_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:max(1, len(sentences)//4)]
-        summary_para = [s for s in sentences if s in top_sentences]
-        final_summary_bullets.append("• " + " ".join(summary_para))
+        if len(sentences) <= 3: return text
         
-    return "<br><br>".join(final_summary_bullets)
+        all_words = re.findall(r'\b\w{4,}\b', text.lower())
+        word_freq = Counter(all_words)
+        
+        sentence_scores = {}
+        for sent in sentences:
+            words = re.findall(r'\b\w{4,}\b', sent.lower())
+            score = sum(word_freq.get(w, 0) for w in set(words))
+            sentence_scores[sent] = score / max(1, len(sent.split()))
+            
+        top_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:max(2, len(sentences)//4)]
+        summary = " ".join([s for s in sentences if s in top_sentences])
+        return "### [Local Summary] \n\n" + summary
 
 
 def generate_questions(text, difficulty='medium'):

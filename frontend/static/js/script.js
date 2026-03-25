@@ -7,61 +7,69 @@ let weakChart = null;
 let currentMcqAnswers = {};
 
 function initApp() {
-    setupNavigation();
-    setupThemeToggle();
-    setupDropZone();
-    const navToggle = document.getElementById('nav-toggle');
-    const navLinksList = document.getElementById('nav-links');
-    if (navToggle && navLinksList) {
-        navToggle.addEventListener('click', () => {
-            navLinksList.classList.toggle('active');
-        });
-        
-        // Close menu when a link is clicked
-        navLinksList.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                navLinksList.classList.remove('active');
+    try {
+        setupNavigation();
+        setupThemeToggle();
+        setupDropZone();
+        const navToggle = document.getElementById('nav-toggle');
+        const navLinksList = document.getElementById('nav-links');
+        if (navToggle && navLinksList) {
+            navToggle.addEventListener('click', () => {
+                navLinksList.classList.toggle('active');
             });
-        });
-    }
+            
+            navLinksList.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinksList.classList.remove('active');
+                });
+            });
+        }
 
-    setupHandlers();
-    loadDashboard();
+        setupHandlers();
+        loadDashboard();
+    } catch (e) {
+        console.error("Critical Init Error:", e);
+    }
 }
 
 // ---- Navigation Setup ----
 function setupNavigation() {
     const navLinks = document.querySelectorAll('.nav-links a');
-    const sections = document.querySelectorAll('.section-view');
-    const mobileToggle = document.querySelector('.mobile-toggle');
-    const navMenu = document.querySelector('.nav-links');
+    const navMenu = document.getElementById('nav-links');
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            const id = e.target.closest('a').getAttribute('href').substring(1);
-            if (id) {
-                e.preventDefault();
-                navigateTo(id);
-                // Close mobile menu if open
-                if(navMenu.classList.contains('show')) {
-                    navMenu.classList.remove('show');
+            const onclickAttr = link.getAttribute('onclick');
+            if (!onclickAttr) {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#') && href.length > 1) {
+                    e.preventDefault();
+                    navigateTo(href.substring(1));
                 }
+            }
+            
+            // Auto-close mobile menu
+            if (navMenu && navMenu.classList.contains('active')) {
+                navMenu.classList.remove('active');
             }
         });
     });
-
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', () => {
-            navMenu.classList.toggle('show');
-        });
-    }
 }
 
 function navigateTo(id) {
+    if (!id || id === '#') return;
+    
     // Nav active state
     document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
-    const targetLink = document.querySelector(`.nav-links a[href="#${id}"]`);
-    if(targetLink) targetLink.classList.add('active');
+    
+    // Find link by checking both href and onclick (for robustness)
+    const links = document.querySelectorAll('.nav-links a');
+    links.forEach(a => {
+        const onclickAttr = a.getAttribute('onclick') || "";
+        if (onclickAttr.includes(`'${id}'`) || a.getAttribute('href') === `#${id}`) {
+            a.classList.add('active');
+        }
+    });
 
     // Section view toggle
     document.querySelectorAll('.section-view').forEach(sec => sec.classList.remove('active-view'));
@@ -73,13 +81,17 @@ function navigateTo(id) {
         if(id === 'dashboard') {
             loadDashboard();
         }
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
 // ---- Theme Setup ----
 function setupThemeToggle() {
-    const themeBtn = document.getElementById('theme-toggle');
+    const themeBtn = document.getElementById('theme-btn');
     const root = document.documentElement;
+    if (!themeBtn) return;
 
     // 1. Load saved theme or system preference
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -100,7 +112,8 @@ function setupThemeToggle() {
 }
 
 function updateThemeIcon(theme) {
-    const themeBtn = document.getElementById('theme-toggle');
+    const themeBtn = document.getElementById('theme-btn');
+    if (!themeBtn) return;
     if (theme === 'dark') {
         themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
     } else {
@@ -114,8 +127,11 @@ function setupDropZone() {
     const fileInput = document.getElementById('file-input');
     const browseBtn = document.getElementById('browse-btn');
 
-    browseBtn.addEventListener('click', () => fileInput.click());
-
+    if (browseBtn && fileInput) {
+        browseBtn.addEventListener('click', () => fileInput.click());
+    }
+    
+    if (!dropZone) return;
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, preventDefaults, false);
     });
@@ -220,114 +236,138 @@ function setupHandlers() {
     }
 
     // 2b. TTS and Copy for Notes
-    document.getElementById('speak-notes').addEventListener('click', function() {
-        if (speechSynthesis.speaking) {
-            speechSynthesis.cancel();
-            this.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
-            this.title = "Read Aloud";
-        } else {
-            const text = document.getElementById('notes-content').innerText;
-            const utterance = new SpeechSynthesisUtterance(text);
-            
-            utterance.onend = () => {
+    const speakNotesBtn = document.getElementById('speak-notes');
+    if (speakNotesBtn) {
+        speakNotesBtn.addEventListener('click', function() {
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
                 this.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
                 this.title = "Read Aloud";
-            };
-            
-            speechSynthesis.speak(utterance);
-            this.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
-            this.title = "Stop Reading";
-        }
-    });
+            } else {
+                const content = document.getElementById('notes-content');
+                if (!content) return;
+                const text = content.innerText;
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                utterance.onend = () => {
+                    this.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                    this.title = "Read Aloud";
+                };
+                
+                window.speechSynthesis.speak(utterance);
+                this.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+                this.title = "Stop Reading";
+            }
+        });
+    }
 
-    document.getElementById('copy-notes').addEventListener('click', () => {
-        const text = document.getElementById('notes-content').innerText;
-        navigator.clipboard.writeText(text).then(() => alert('Notes copied to clipboard!'));
-    });
+    const copyNotesBtn = document.getElementById('copy-notes');
+    if (copyNotesBtn) {
+        copyNotesBtn.addEventListener('click', () => {
+            const content = document.getElementById('notes-content');
+            if (!content) return;
+            const text = content.innerText;
+            navigator.clipboard.writeText(text).then(() => alert('Notes copied to clipboard!'));
+        });
+    }
 
     // 3. Generate Quiz
-    document.getElementById('generate-quiz-btn').addEventListener('click', async () => {
-        showLoader();
-        try {
-            const res = await fetch('/api/generate_questions', { method: 'POST' });
-            const data = await res.json();
-            if(data.error) {
-                alert(data.error);
-                return;
-            }
-            if(data.mcqs.length > 0) {
-                // Determine badge color dynamically
-                let colorClass = 'text-cyan';
-                if (data.difficulty === 'hard') colorClass = 'text-purple';
-                if (data.difficulty === 'easy') colorClass = 'text-orange';
-                
-                const header = document.querySelector('#quiz .massive-text');
-                header.innerHTML = `Smart Quiz <span style="font-size: 1.2rem; vertical-align: middle; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);" class="${colorClass}"><i class="fa-solid fa-layer-group"></i> ${data.difficulty ? data.difficulty.toUpperCase() : 'MEDIUM'} MODE</span>`;
-                
-                renderQuiz(data.mcqs);
-            } else {
-                alert('Could not generate quiz. Try uploading more text!');
-            }
-        } catch(e) { console.error(e); } finally { hideLoader(); }
-    });
+    const genQuizBtn = document.getElementById('generate-quiz-btn');
+    if (genQuizBtn) {
+        genQuizBtn.addEventListener('click', async () => {
+            showLoader();
+            try {
+                const res = await fetch('/api/generate_questions', { method: 'POST' });
+                const data = await res.json();
+                if(data.error) {
+                    alert(data.error);
+                    return;
+                }
+                if(data.mcqs && data.mcqs.length > 0) {
+                    let colorClass = 'text-cyan';
+                    if (data.difficulty === 'hard') colorClass = 'text-purple';
+                    if (data.difficulty === 'easy') colorClass = 'text-orange';
+                    
+                    const header = document.querySelector('#quiz .massive-text');
+                    if (header) {
+                        header.innerHTML = `Smart Quiz <span style="font-size: 1.2rem; vertical-align: middle; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);" class="${colorClass}"><i class="fa-solid fa-layer-group"></i> ${data.difficulty ? data.difficulty.toUpperCase() : 'MEDIUM'} MODE</span>`;
+                    }
+                    renderQuiz(data.mcqs);
+                } else {
+                    alert('Could not generate quiz. Try uploading more text!');
+                }
+            } catch(e) { console.error(e); } finally { hideLoader(); }
+        });
+    }
 
     // 4. Submit Quiz
-    document.getElementById('submit-quiz-btn').addEventListener('click', async () => {
-        showLoader();
-        try {
-            const res = await fetch('/api/submit_quiz', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ answers: currentMcqAnswers })
-            });
-            const data = await res.json();
-            if(res.ok) {
-                document.getElementById('quiz-results').classList.remove('hidden');
-                document.getElementById('score-display').innerText = `${Math.round(data.percentage)}%`;
-                
-                const wkList = document.getElementById('weak-areas-list');
-                wkList.innerHTML = '';
-                if(data.weak_topics.length > 0) {
-                    data.weak_topics.forEach(t => {
-                        wkList.innerHTML += `<li><i class="fa-solid fa-circle-exclamation text-secondary pr-2"></i> ${t}</li>`;
-                    });
-                } else {
-                    wkList.innerHTML = '<li>You scored perfect! No weak areas detected.</li>';
+    const submitQuizBtn = document.getElementById('submit-quiz-btn');
+    if (submitQuizBtn) {
+        submitQuizBtn.addEventListener('click', async () => {
+            showLoader();
+            try {
+                const res = await fetch('/api/submit_quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ answers: currentMcqAnswers })
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    const resultsPanel = document.getElementById('quiz-results');
+                    if (resultsPanel) resultsPanel.classList.remove('hidden');
+                    const scoreDisp = document.getElementById('score-display');
+                    if (scoreDisp) scoreDisp.innerText = `${Math.round(data.percentage)}%`;
+                    
+                    const wkList = document.getElementById('weak-areas-list');
+                    if (wkList) {
+                        wkList.innerHTML = '';
+                        if(data.weak_topics && data.weak_topics.length > 0) {
+                            data.weak_topics.forEach(t => {
+                                wkList.innerHTML += `<li><i class="fa-solid fa-circle-exclamation text-secondary pr-2"></i> ${t}</li>`;
+                            });
+                        } else {
+                            wkList.innerHTML = '<li>You scored perfect! No weak areas detected.</li>';
+                        }
+                    }
                 }
-            }
-        } catch (e) { console.error(e); } finally { hideLoader(); }
-    });
+            } catch (e) { console.error(e); } finally { hideLoader(); }
+        });
+    }
 
     // 5. Generate Study Plan
-    document.getElementById('generate-plan-btn').addEventListener('click', async () => {
-        const topics = document.getElementById('plan-topics').value;
-        const hours = document.getElementById('plan-hours').value;
-        
-        showLoader();
-        try {
-            const res = await fetch('/api/study_plan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topics, hours })
-            });
-            const data = await res.json();
-            if(res.ok) {
-                const tl = document.getElementById('plan-timeline');
-                tl.innerHTML = '';
-                tl.classList.remove('hidden');
-                
-                data.plan.forEach((item, index) => {
-                    tl.innerHTML += `
-                        <div class="timeline-item">
-                            <span class="time-badge">Phase ${index + 1}: ${item.duration}</span>
-                            <h4>${item.topic}</h4>
-                            <p>${item.task}</p>
-                        </div>
-                    `;
+    const genPlanBtn = document.getElementById('generate-plan-btn');
+    if (genPlanBtn) {
+        genPlanBtn.addEventListener('click', async () => {
+            const topics = document.getElementById('plan-topics').value;
+            const hours = document.getElementById('plan-hours').value;
+            
+            showLoader();
+            try {
+                const res = await fetch('/api/study_plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topics, hours })
                 });
-            }
-        } catch(e) { console.error(e); } finally { hideLoader(); }
-    });
+                const data = await res.json();
+                if(res.ok) {
+                    const tl = document.getElementById('plan-timeline');
+                    if (tl) {
+                        tl.innerHTML = '';
+                        tl.classList.remove('hidden');
+                        data.plan.forEach((item, index) => {
+                            tl.innerHTML += `
+                                <div class="timeline-item">
+                                    <span class="time-badge">Phase ${index + 1}: ${item.duration}</span>
+                                    <h4>${item.topic}</h4>
+                                    <p>${item.task}</p>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+            } catch(e) { console.error(e); } finally { hideLoader(); }
+        });
+    }
 
     // 6. Chatbot Widget Setup
     const chatToggle = document.getElementById('chatbot-toggle');
@@ -335,58 +375,20 @@ function setupHandlers() {
     const closeChat = document.getElementById('close-chat');
     const chatInput = document.getElementById('chat-input');
     const sendChat = document.getElementById('send-chat');
-    const chatMessages = document.getElementById('chat-messages');
 
-    chatToggle.addEventListener('click', () => chatWidget.classList.toggle('hidden'));
-    closeChat.addEventListener('click', () => chatWidget.classList.add('hidden'));
-
-    async function sendMessage() {
-        const text = chatInput.value.trim();
-        if (!text) return;
-
-        chatMessages.innerHTML += `<div class="message user-message">${text}</div>`;
-        chatInput.value = '';
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        const typingId = 'typing-' + Date.now();
-        chatMessages.innerHTML += `<div id="${typingId}" class="message bot-message">Generating response... <i class="fa-solid fa-spinner fa-spin"></i></div>`;
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        try {
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: text })
-            });
-            const data = await res.json();
-            
-            document.getElementById(typingId).remove();
-            
-            // Clean text for speech synthesis API
-            const safeSpeech = data.answer.replace(/'/g, "\\'").replace(/"/g, '\\"');
-            
-            chatMessages.innerHTML += `
-                <div class="message bot-message">
-                    ${data.answer}
-                    <div style="margin-top: 8px; text-align: right;">
-                        <button class="btn-icon" style="width: 30px; height: 30px; font-size: 0.8rem; display: inline-flex;" onclick="speakChatbotText('${safeSpeech}')" title="Read Aloud">
-                            <i class="fa-solid fa-volume-high text-cyan"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        } catch (error) {
-            document.getElementById(typingId).remove();
-            chatMessages.innerHTML += `<div class="message bot-message" style="color:#ff4d4d;">Failed to connect to AI brain.</div>`;
-        }
+    if (chatToggle && chatWidget) {
+        chatToggle.addEventListener('click', () => chatWidget.classList.toggle('hidden'));
+    }
+    if (closeChat && chatWidget) {
+        closeChat.addEventListener('click', () => chatWidget.classList.add('hidden'));
     }
 
-    sendChat.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
-
+    if (sendChat && chatInput) {
+        sendChat.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    }
     // 7. Voice Input (Speech-To-Text) Accessibility 
     const voiceChat = document.getElementById('voice-chat');
     if (voiceChat && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -398,13 +400,15 @@ function setupHandlers() {
         
         recognition.onstart = function() {
             voiceChat.innerHTML = '<i class="fa-solid fa-microphone-lines fa-beat text-cyan"></i>';
-            chatInput.placeholder = "Listening...";
+            if (chatInput) chatInput.placeholder = "Listening...";
         };
         
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
-            chatInput.value = transcript;
-            sendMessage(); // Automatically send question upon finished speaking
+            if (chatInput) {
+                chatInput.value = transcript;
+                sendMessage(); 
+            }
         };
         
         recognition.onerror = function(event) {
@@ -413,14 +417,59 @@ function setupHandlers() {
         
         recognition.onend = function() {
             voiceChat.innerHTML = '<i class="fa-solid fa-microphone"></i>';
-            chatInput.placeholder = "Type your doubt...";
+            if (chatInput) chatInput.placeholder = "Type your doubt...";
         };
         
         voiceChat.addEventListener('click', () => {
             recognition.start();
         });
-    } else if (voiceChat) {
-        voiceChat.style.display = 'none'; // Not supported in this browser
+    }
+}
+
+async function sendMessage() {
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+    if (!chatInput || !chatMessages) return;
+
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    chatMessages.innerHTML += `<div class="message user-message">${text}</div>`;
+    chatInput.value = '';
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    const typingId = 'typing-' + Date.now();
+    chatMessages.innerHTML += `<div id="${typingId}" class="message bot-message">Generating response... <i class="fa-solid fa-spinner fa-spin"></i></div>`;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    try {
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: text })
+        });
+        const data = await res.json();
+        
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+        
+        const safeSpeech = data.answer.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        
+        chatMessages.innerHTML += `
+            <div class="message bot-message">
+                ${data.answer}
+                <div style="margin-top: 8px; text-align: right;">
+                    <button class="btn-icon" style="width: 30px; height: 30px; font-size: 0.8rem; display: inline-flex;" onclick="speakChatbotText('${safeSpeech}')" title="Read Aloud">
+                        <i class="fa-solid fa-volume-high text-cyan"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    } catch (error) {
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+        chatMessages.innerHTML += `<div class="message bot-message" style="color:#ff4d4d;">Failed to connect to AI brain.</div>`;
     }
 }
 
@@ -509,7 +558,7 @@ async function loadDashboard() {
         renderWeaknessChart(data.weak_areas);
         
         // Weak Areas List (clear text)
-        const wl = document.getElementById('weak-areas-list');
+        const wl = document.getElementById('dashboard-weak-list');
         if(wl) {
             wl.innerHTML = data.weak_areas.length ? '' : '<li style="border-left-color: var(--snap-green, #2ed573);">✅ No weak areas! Keep up the great work!</li>';
             data.weak_areas.forEach(wa => {

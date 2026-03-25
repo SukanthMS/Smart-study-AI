@@ -182,6 +182,10 @@ body {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme="dark"] .glass-nav {
+    background: rgba(18, 18, 18, 0.75);
+}
+
 .nav-toggle {
     display: none;
     background: none;
@@ -790,3 +794,56 @@ h4 {
         padding: 15px !important;
     }
 }
+/* ========================
+   AI NOTES & QUIZ BOXES (COLORFUL & ATTRACTIVE)
+   ======================== */
+/* ========================
+   AI NOTES GEN (CONCENTRATION-BOOST MINT GREEN)
+   ======================== */
+#notes .glass-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(0, 219, 137, 0.05) 100%);
+    border-color: rgba(0, 219, 137, 0.3);
+    box-shadow: 0 15px 45px rgba(0, 219, 137, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+#notes .glass-panel::after {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(0, 219, 137, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+#notes-content {
+    background: rgba(255, 255, 255, 0.45);
+    border-radius: 22px;
+    padding: 30px;
+    border: 1px solid rgba(0, 219, 137, 0.15);
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.01);
+}
+
+#quiz .glass-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(0, 219, 137, 0.05) 100%);
+    border-color: rgba(0, 219, 137, 0.3);
+    box-shadow: 0 15px 45px rgba(0, 219, 137, 0.1);
+}
+
+.mcq-item {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(0, 219, 137, 0.15);
+    padding: 20px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.mcq-item:hover {
+    border-color: rgba(0, 219, 137, 0.4);
+    transform: translateX(5px);
+}
+
