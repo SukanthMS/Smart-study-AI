@@ -199,8 +199,21 @@ function setupHandlers() {
                 
                 statusMsg.classList.remove('hidden');
                 if(res.ok) {
-                    statusMsg.innerHTML = `<span class="text-cyan"><i class="fa-solid fa-check-circle"></i> ${data.message} (${data.char_count} chars analyzed).</span>`;
-                    setTimeout(() => { navigateTo('notes'); }, 1500);
+                    statusMsg.innerHTML = `<span class="text-cyan"><i class="fa-solid fa-check-circle"></i> ${data.message} (${data.char_count} chars). Preparing AI Notes... <i class="fa-solid fa-microchip fa-spin"></i></span>`;
+                    
+                    // Trigger immediate background note generation
+                    setTimeout(async () => {
+                        const notesRes = await fetch('/api/generate_notes', { method: 'POST' });
+                        const notesData = await notesRes.json();
+                        if (notesRes.ok) {
+                            document.getElementById('notes-result').classList.remove('hidden');
+                            document.getElementById('notes-content').innerHTML = `<p style="white-space: pre-wrap; font-size:1.1rem; line-height:1.8;">${notesData.notes}</p>`;
+                            navigateTo('notes');
+                        } else {
+                            alert(notesData.error || 'Failed to generate notes.');
+                            navigateTo('notes');
+                        }
+                    }, 500);
                 } else {
                     statusMsg.innerHTML = `<span style="color:red;"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error}</span>`;
                 }

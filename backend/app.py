@@ -232,32 +232,46 @@ def upload_file():
                 return jsonify({"error": "Unsupported file format. Please upload PDF."}), 400
                 
     if not text.strip():
+        print("[BACKEND] ERROR: No valid text extracted for upload.")
         return jsonify({"error": "No text or file provided"}), 400
         
     session['current_text'] = text
+    session.modified = True # Ensure session is saved
+    print(f"[BACKEND] Success: Uploaded {len(text)} characters to session.")
     
-    history = list(user.history)
-    history.append("Uploaded Study Material")
-    user.history = history
-    db.session.commit()
+    try:
+        history = list(user.history)
+        history.append("Uploaded Study Material")
+        user.history = history
+        db.session.commit()
+    except Exception as e:
+        print(f"[BACKEND] User Profile Update Warning: {e}")
     
     return jsonify({"message": "Content uploaded successfully", "char_count": len(text)})
 
 @app.route('/api/generate_notes', methods=['POST'])
 def generate_notes():
     text = session.get('current_text', '')
-    user = get_user()
-    if not text:
-        return jsonify({"error": "No text uploaded yet."}), 400
+    print(f"[BACKEND] Attempting Note Generation. Session text length: {len(text)}")
+    
+    if not text or len(text.strip()) < 5:
+        print("[BACKEND] ERROR: current_text was empty in session! Did upload fail or session reset?")
+        return jsonify({"error": "No text uploaded yet or session expired. Please upload again."}), 400
         
-    summary = generate_summary(text)
-    
-    history = list(user.history)
-    history.append("Generated Smart Notes")
-    user.history = history
-    db.session.commit()
-    
-    return jsonify({"notes": summary, "original_length": len(text), "summary_length": len(summary)})
+    user = get_user()
+    try:
+        summary = generate_summary(text)
+        print(f"[BACKEND] Summary successfully generated ({len(summary)} chars).")
+        
+        history = list(user.history)
+        history.append("Generated Smart Notes")
+        user.history = history
+        db.session.commit()
+        
+        return jsonify({"notes": summary, "original_length": len(text), "summary_length": len(summary)})
+    except Exception as e:
+        print(f"[BACKEND] CRITICAL FAILED during summary processing: {e}")
+        return jsonify({"error": f"AI Brain is busy/errored: {str(e)}"}), 500
 
 @app.route('/api/generate_questions', methods=['POST'])
 def generate_questions_route():
