@@ -264,9 +264,12 @@ def generate_notes():
         print(f"[BACKEND] Summary successfully generated ({len(summary)} chars).")
         
         history = list(user.history)
-        history.append("Generated Smart Notes")
+        history.append("📑 Compiled Topic Summaries (Study Time: ~20 mins)")
         user.history = history
         db.session.commit()
+        
+        add_badge("Topic Completion Badge", "fa-solid fa-check-double text-purple")
+        add_badge("Study Streak Badge", "fa-solid fa-fire text-orange")
         
         return jsonify({"notes": summary, "original_length": len(text), "summary_length": len(summary)})
     except Exception as e:
@@ -337,8 +340,14 @@ def submit_quiz():
     scores.append(percentage)
     user.scores = scores
     
-    history.append(f"Took Quiz: {score}/{total}")
+    history.append(f"✍️ Took Quiz: {score}/{total} (Quiz Results Recorded)")
     user.history = history
+    
+    if len(scores) >= 3:
+        add_badge("Quiz Master Badge", "fa-solid fa-crown text-cyan")
+        
+    if percentage >= 80:
+        add_badge("Fast Learner Badge", "fa-solid fa-rocket text-yellow")
     
     user_weak_areas = list(user.weak_areas)
     for topic in weak_topics:
@@ -397,20 +406,25 @@ def chat():
     if not question:
         return jsonify({"answer": "Please ask a question."})
         
-    if not text:
-        return jsonify({"answer": "Please upload a document or paste text first so I can answer questions about it!"})
-
     try:
         # Use Groq AI for much better responses
-        system_prompt = f"""
-        You are a highly intelligent Study Assistant. 
-        The context provided below is the content of the student's study material.
-        Always answer questions based on this context. If the answer isn't in the context, say you don't know but try to offer general educational advice.
-        Keep your answers clear, professional, and helpful.
-        
-        STUDY MATERIAL CONTEXT:
-        {text[:15000]} # Limiting context for token limits
-        """
+        if not text:
+            system_prompt = """
+            You are a highly intelligent Study Assistant. 
+            The user has not uploaded any study material yet.
+            Answer their questions generally and offer helpful educational advice.
+            Keep your answers clear, professional, and helpful.
+            """
+        else:
+            system_prompt = f"""
+            You are a highly intelligent Study Assistant. 
+            The context provided below is the content of the student's study material.
+            Always answer questions based on this context. If the answer isn't in the context, say you don't know but try to offer general educational advice.
+            Keep your answers clear, professional, and helpful.
+            
+            STUDY MATERIAL CONTEXT:
+            {text[:15000]} # Limiting context for token limits
+            """
         
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",

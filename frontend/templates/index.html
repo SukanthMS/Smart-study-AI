@@ -184,6 +184,24 @@
             <div class="glass-panel section-container">
                 <h2><i class="fa-solid fa-chart-pie"></i> Progress Dashboard</h2>
                 <div class="dashboard-grid mt-4">
+                    <div class="stats-row mb-4" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; grid-column: 1 / -1;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, rgba(0, 219, 137, 0.1), rgba(0, 219, 137, 0.02)); border: 1px solid rgba(0,219,137,0.3); padding: 25px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,219,137,0.1); transition: transform 0.3s; cursor: pointer;">
+                            <i class="fa-solid fa-star text-yellow" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                            <h4 style="font-size: 1.1rem; color: var(--text);">Current Level</h4>
+                            <h2 id="dash-level" style="font-size: 3rem; margin-top: 10px; color: #00db89; text-shadow: 0 0 15px rgba(0,219,137,0.4);">1</h2>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, rgba(162, 38, 255, 0.1), rgba(162, 38, 255, 0.02)); border: 1px solid rgba(162, 38, 255, 0.3); padding: 25px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(162, 38, 255, 0.1); transition: transform 0.3s; cursor: pointer;">
+                            <i class="fa-solid fa-bolt text-cyan" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                            <h4 style="font-size: 1.1rem; color: var(--text);">Total XP Earned</h4>
+                            <h2 id="dash-xp" style="font-size: 3rem; margin-top: 10px; color: #a226ff; text-shadow: 0 0 15px rgba(162,38,255,0.4);">0</h2>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, rgba(255, 62, 112, 0.1), rgba(255, 62, 112, 0.02)); border: 1px solid rgba(255, 62, 112, 0.3); padding: 25px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(255, 62, 112, 0.1); transition: transform 0.3s; cursor: pointer;">
+                            <i class="fa-solid fa-trophy text-orange" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                            <h4 style="font-size: 1.1rem; color: var(--text);">Badges Unlocked</h4>
+                            <h2 id="dash-badges" style="font-size: 3rem; margin-top: 10px; color: #ff3e70; text-shadow: 0 0 15px rgba(255,62,112,0.4);">0</h2>
+                        </div>
+                    </div>
+                
                     <div class="chart-container glass-card">
                         <h3><i class="fa-solid fa-arrow-trend-up text-cyan pr-2"></i> Quiz Performance</h3>
                         <canvas id="scoresChart"></canvas>

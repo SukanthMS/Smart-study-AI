@@ -207,7 +207,7 @@ function setupHandlers() {
                         const notesData = await notesRes.json();
                         if (notesRes.ok) {
                             document.getElementById('notes-result').classList.remove('hidden');
-                            document.getElementById('notes-content').innerHTML = `<p style="white-space: pre-wrap; font-size:1.1rem; line-height:1.8;">${notesData.notes}</p>`;
+                            document.getElementById('notes-content').innerHTML = `<div style="white-space: pre-wrap; font-size:1.1rem; line-height:1.8;">${formatNotes(notesData.notes)}</div>`;
                             navigateTo('notes');
                         } else {
                             alert(notesData.error || 'Failed to generate notes.');
@@ -239,7 +239,7 @@ function setupHandlers() {
                     document.getElementById('notes-content').innerHTML = `
                         <p><strong>Summary Details:</strong> Reduced text from ${data.original_length} to ${data.summary_length} characters.</p>
                         <hr style="border-color:var(--glass-border); margin:15px 0;">
-                        <p style="white-space: pre-wrap; font-size:1.1rem; line-height:1.8;">${data.notes}</p>
+                        <div style="white-space: pre-wrap; font-size:1.1rem; line-height:1.8;">${formatNotes(data.notes)}</div>
                     `;
                 } else {
                     alert(data.error);
@@ -552,9 +552,15 @@ async function loadDashboard() {
         
         // Gamification Update
         if(document.getElementById('nav-level-text')) {
-            document.getElementById('nav-level-text').textContent = 'Lvl ' + data.level;
-            const xpProgress = (data.xp % 50) * 2; // 50 points per level, scale to percentage
-            document.getElementById('nav-xp-fill').style.width = xpProgress + '%';
+            document.getElementById('nav-level-text').innerText = `Level ${data.level}`;
+            document.getElementById('nav-xp-fill').style.width = `${(data.xp % 100)}%`;
+        }
+        
+        // Large Dashboard Stat Cards
+        if(document.getElementById('dash-level')) {
+            document.getElementById('dash-level').innerText = data.level;
+            document.getElementById('dash-xp').innerText = data.xp;
+            document.getElementById('dash-badges').innerText = data.badges.length;
         }
         
         // Badges Update
@@ -675,4 +681,18 @@ function renderWeaknessChart(weakAreas) {
             }
         }
     });
+}
+
+function formatNotes(text) {
+    if (!text) return "";
+    let formatted = text;
+    // Replace markdown headings ### Heading
+    formatted = formatted.replace(/^(###|##|#)\s+(.*)$/gm, '<h3>$2</h3>');
+    // Replace headings that are just bolded lines: **Heading**
+    formatted = formatted.replace(/^\*\*(.*?)\*\*$/gm, '<h3>$1</h3>');
+    // Replace remaining bold text
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Replace unwanted list symbols (+, *, -) with clean bullets
+    formatted = formatted.replace(/^\s*[\*\+\-]\s+(.*)$/gm, '&bull; $1');
+    return formatted;
 }
