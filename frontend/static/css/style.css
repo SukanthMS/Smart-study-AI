@@ -388,6 +388,19 @@ h4 {
     border: 1px solid var(--border);
 }
 
+.btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 2px solid var(--border);
+}
+
+.btn-outline:hover {
+    border-color: var(--ig-pink);
+    color: var(--ig-pink);
+    background: rgba(204, 35, 102, 0.05);
+}
+
+
 .btn-view-progress {
     background: #fff;
     color: var(--ig-pink) !important;
@@ -496,15 +509,23 @@ h4 {
 /* HIGH-CONTRAST BOLD HEADINGS FOR ALL BOXES */
 #upload h2,
 #upload h3,
+#upload p,
+#upload div,
 #notes h2,
 #notes h3,
+#notes p,
 #quiz h2,
 #quiz h3,
+#quiz p,
+#quiz div,
 #dashboard h2,
 #dashboard h3,
+#dashboard h4,
+#dashboard p,
 #plan h2,
-#plan h3 {
-    color: var(--text) !important;
+#plan h3,
+#plan p {
+    color: #000 !important;
 }
 
 /* ========================
@@ -900,6 +921,14 @@ h4 {
     box-shadow: 0 15px 45px rgba(0, 219, 137, 0.1);
 }
 
+#quiz p,
+#quiz h2,
+#quiz h3,
+#quiz h4,
+#quiz div {
+    color: #000 !important;
+}
+
 .mcq-item {
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(0, 219, 137, 0.15);
@@ -948,3 +977,79 @@ h4 {
 #submit-quiz-btn {
     color: #000 !important;
 }
+
+/* ========================
+   QUIZ REVIEW STYLES
+   ======================== */
+.mcq-option.correct {
+    background: rgba(46, 213, 115, 0.2) !important;
+    border-color: #2ed573 !important;
+    color: #1a1a1a !important;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .mcq-option.correct {
+    color: #fff !important;
+}
+
+.mcq-option.incorrect {
+    background: rgba(255, 71, 87, 0.2) !important;
+    border-color: #ff4757 !important;
+    color: #1a1a1a !important;
+    text-decoration: line-through;
+}
+
+[data-theme="dark"] .mcq-option.incorrect {
+    color: #fff !important;
+}
+
+.mcq-option.correct::after {
+    content: ' \f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    margin-left: 10px;
+    color: #2ed573;
+}
+
+.mcq-option.incorrect::after {
+    content: ' \f00d';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    margin-left: 10px;
+    color: #ff4757;
+}
+
+.review-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    margin-left: 10px;
+    font-weight: 600;
+}
+
+.review-badge.correct-badge {
+    background: #2ed573;
+    color: #fff;
+}
+
+.review-badge.incorrect-badge {
+    background: #ff4757;
+    color: #fff;
+}
+
+.review-explanation {
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(0, 149, 246, 0.05);
+    border-left: 4px solid #0095f6;
+    font-size: 0.95rem;
+    border-radius: 0 8px 8px 0;
+}
+
+/* Utility Classes */
+.d-flex { display: flex !important; }
+.justify-content-between { justify-content: space-between !important; }
+.align-items-center { align-items: center !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.pr-2 { padding-right: 0.5rem !important; }

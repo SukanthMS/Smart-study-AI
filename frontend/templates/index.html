@@ -155,7 +155,20 @@
                         <h4>Areas to Review:</h4>
                         <ul id="weak-areas-list" class="modern-list"></ul>
                     </div>
+                    <button class="btn btn-primary mt-4 w-100" id="review-quiz-btn">Check My Answers <i class="fa-solid fa-square-check"></i></button>
+                    <button class="btn btn-outline mt-2 w-100" onclick="navigateTo('dashboard')">Back to Dashboard</button>
                 </div>
+
+                <!-- Review Mode Container -->
+                <div id="review-container" class="hidden mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fa-solid fa-magnifying-glass text-cyan"></i> Detailed Review</h3>
+                        <button class="btn btn-icon" id="close-review-btn" title="Close Review"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                    <div id="review-mcq-container"></div>
+                    <button class="btn btn-secondary mt-4 w-100" id="back-to-results-btn">Back to Results</button>
+                </div>
+
             </div>
         </section>
 

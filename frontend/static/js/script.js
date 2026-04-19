@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
 let myChart = null;
 let weakChart = null;
 let currentMcqAnswers = {};
+let currentMcqs = [];
+
 
 function initApp() {
     try {
@@ -219,7 +221,7 @@ function setupHandlers() {
                 }
             } catch (err) {
                 console.error(err);
-                alert('Upload failed.');
+                alert('Upload failed: ' + err.message);
             } finally {
                 hideLoader();
             }
@@ -317,6 +319,11 @@ function setupHandlers() {
     const submitQuizBtn = document.getElementById('submit-quiz-btn');
     if (submitQuizBtn) {
         submitQuizBtn.addEventListener('click', async () => {
+            // Check if at least one question is answered
+            if (Object.keys(currentMcqAnswers).length === 0) {
+                if(!confirm('You haven\'t answered any questions. Submit anyway?')) return;
+            }
+
             showLoader();
             try {
                 const res = await fetch('/api/submit_quiz', {
@@ -324,10 +331,20 @@ function setupHandlers() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ answers: currentMcqAnswers })
                 });
+                
                 const data = await res.json();
+                
                 if(res.ok) {
+                    // Hide quiz, show results
+                    document.getElementById('quiz-container').classList.add('hidden');
+                    
                     const resultsPanel = document.getElementById('quiz-results');
-                    if (resultsPanel) resultsPanel.classList.remove('hidden');
+                    if (resultsPanel) {
+                        resultsPanel.classList.remove('hidden');
+                        // Smooth scroll to results
+                        resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    
                     const scoreDisp = document.getElementById('score-display');
                     if (scoreDisp) scoreDisp.innerText = `${Math.round(data.percentage)}%`;
                     
@@ -342,10 +359,45 @@ function setupHandlers() {
                             wkList.innerHTML = '<li>You scored perfect! No weak areas detected.</li>';
                         }
                     }
+                    
+                    // Refresh dashboard data
+                    loadDashboard();
+                } else {
+                    alert('Submission Error: ' + (data.error || 'The server could not process your answers.'));
                 }
-            } catch (e) { console.error(e); } finally { hideLoader(); }
+            } catch (e) { 
+                console.error(e); 
+                alert('Connection Error: Could not reach the server. Check your internet or server logs.');
+            } finally { 
+                hideLoader(); 
+            }
         });
     }
+
+    // 4b. Review Quiz
+    const reviewQuizBtn = document.getElementById('review-quiz-btn');
+    if (reviewQuizBtn) {
+        reviewQuizBtn.addEventListener('click', () => {
+            reviewQuiz();
+        });
+    }
+
+    const backToResultsBtn = document.getElementById('back-to-results-btn');
+    if (backToResultsBtn) {
+        backToResultsBtn.addEventListener('click', () => {
+            document.getElementById('review-container').classList.add('hidden');
+            document.getElementById('quiz-results').classList.remove('hidden');
+        });
+    }
+
+    const closeReviewBtn = document.getElementById('close-review-btn');
+    if (closeReviewBtn) {
+        closeReviewBtn.addEventListener('click', () => {
+            document.getElementById('review-container').classList.add('hidden');
+            document.getElementById('quiz-results').classList.remove('hidden');
+        });
+    }
+
 
     // 5. Generate Study Plan
     const genPlanBtn = document.getElementById('generate-plan-btn');
@@ -497,6 +549,7 @@ function renderQuiz(mcqs) {
     const container = document.getElementById('mcq-container');
     container.innerHTML = '';
     currentMcqAnswers = {};
+    currentMcqs = mcqs; // Store globally for review
     
     if(mcqs.length === 0) {
         container.innerHTML = '<p>No questions could be generated from the text. Please provide longer content.</p>';
@@ -505,6 +558,7 @@ function renderQuiz(mcqs) {
 
     document.getElementById('quiz-container').classList.remove('hidden');
     document.getElementById('quiz-results').classList.add('hidden');
+    document.getElementById('review-container').classList.add('hidden');
 
     mcqs.forEach((q, index) => {
         let optionsHtml = q.options.map(opt => 
@@ -537,6 +591,49 @@ function renderQuiz(mcqs) {
         });
     });
 }
+
+function reviewQuiz() {
+    const container = document.getElementById('review-mcq-container');
+    container.innerHTML = '';
+    
+    document.getElementById('quiz-results').classList.add('hidden');
+    document.getElementById('review-container').classList.remove('hidden');
+    
+    currentMcqs.forEach((q, index) => {
+        const userAnswer = currentMcqAnswers[q.id] || "";
+        const correctAnswer = q.answer;
+        const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+        
+        let optionsHtml = q.options.map(opt => {
+            let statusClass = "";
+            if (opt.toLowerCase().trim() === correctAnswer.toLowerCase().trim()) {
+                statusClass = "correct";
+            } else if (opt.toLowerCase().trim() === userAnswer.toLowerCase().trim()) {
+                statusClass = "incorrect";
+            }
+            return `<div class="mcq-option ${statusClass}" style="cursor: default;">${opt}</div>`;
+        }).join('');
+
+        const statusBadge = isCorrect 
+            ? `<span class="review-badge correct-badge">Correct</span>` 
+            : `<span class="review-badge incorrect-badge">Incorrect</span>`;
+
+        container.innerHTML += `
+            <div class="mcq-item" style="border-left: 5px solid ${isCorrect ? '#2ed573' : '#ff4757'}">
+                <p><strong>Q${index + 1}:</strong> ${q.question} ${statusBadge}</p>
+                <div class="mcq-options">${optionsHtml}</div>
+                ${!isCorrect ? `<div class="review-explanation"><strong>Correct Answer:</strong> ${correctAnswer}</div>` : ''}
+                <div class="review-explanation" style="border-left-color: #bc1888; background: rgba(188, 24, 136, 0.05);">
+                    <i class="fa-solid fa-lightbulb text-purple"></i> <strong>Topic:</strong> ${q.topic}
+                </div>
+            </div>
+        `;
+    });
+    
+    // Smooth scroll to top of review
+    document.getElementById('review-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 
 async function loadDashboard() {
     try {

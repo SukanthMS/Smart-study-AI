@@ -22,6 +22,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Try PostgreSQL first, fallback to SQLite if needed
 try:
+    if not db_url:
+        raise ValueError("DATABASE_URL not found in environment")
     print(f"Attempting to test PostgreSQL: {db_url[:20]}...")
     import psycopg2
     # Test raw connection first with a short timeout
@@ -41,7 +43,10 @@ except Exception as e:
 db = SQLAlchemy(app)
 
 # Groq Configuration
-client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+api_key = os.getenv('GROQ_API_KEY')
+if not api_key:
+    print("⚠️ WARNING: GROQ_API_KEY not found in environment variables. AI features will not work.")
+client = Groq(api_key=api_key)
 
 # Models
 class UserProgress(db.Model):
@@ -70,9 +75,34 @@ UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+def extract_text_from_pdf(filepath):
+    """Extract text from a PDF file using pypdf"""
+    try:
+        reader = PdfReader(filepath)
+        text = ""
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        print(f"[BACKEND] PDF extracted: {len(text)} characters from {len(reader.pages)} pages.")
+        return text.strip()
+    except Exception as e:
+        print(f"[BACKEND] PDF extraction error: {e}")
+        return ""
+
 def get_user():
-    # In a real app, this would be based on logged-in user
-    return db.session.get(UserProgress, 1)
+    user = db.session.get(UserProgress, 1)
+    if not user:
+        try:
+            print("[DATABASE] Creating default user 1...")
+            user = UserProgress(id=1)
+            db.session.add(user)
+            db.session.commit()
+            return user
+        except:
+            db.session.rollback()
+            return None
+    return user
 
 def add_xp(amount, reason):
     user = get_user()
@@ -97,17 +127,6 @@ def add_badge(badge_name, icon):
         user.badges = badges
         db.session.commit()
 
-def extract_text_from_pdf(filepath):
-    try:
-        reader = PdfReader(filepath)
-        text = ""
-        for page in reader.pages:
-            if page.extract_text():
-                text += page.extract_text() + "\n"
-        return text
-    except Exception as e:
-        return str(e)
-
 def generate_summary(text):
     if not text or len(text.split()) < 5:
         return "Not enough content to summarize."
@@ -119,9 +138,9 @@ def generate_summary(text):
                 "role": "user",
                 "content": f"Summarize the following study material into well-structured, easy-to-read bullet points with bold key terms: \n\n{text[:15000]}"
             }],
-            model="llama-3.3-70b-versatile",
-            temperature=0.5,
-            max_tokens=1000
+            model="llama-3.1-8b-instant",
+            temperature=0.3,
+            max_tokens=800
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -142,6 +161,68 @@ def generate_summary(text):
         top_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:max(2, len(sentences)//4)]
         summary = " ".join([s for s in sentences if s in top_sentences])
         return "### [Local Summary] \n\n" + summary
+
+
+def generate_questions_ai(text, num_questions=10):
+    """Generate quiz questions using Groq AI for proper, meaningful MCQs"""
+    import json as json_lib
+    try:
+        prompt = "Based on the following study material, generate exactly " + str(num_questions) + """ multiple choice questions.
+
+RULES:
+- Each question must be a clear, meaningful question.
+- Each question must have exactly 4 answer choices.
+- Only ONE answer should be correct.
+- The "answer" field MUST be the EXACT text of the correct option from the "options" array.
+
+Return ONLY a valid JSON array in this exact format, no other text:
+[
+  {
+    "question": "What is the capital of France?",
+    "options": ["London", "Berlin", "Paris", "Madrid"],
+    "answer": "Paris",
+    "topic": "Geography"
+  }
+]
+
+STUDY MATERIAL:
+""" + text[:8000]
+
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "Return ONLY a JSON array of MCQs based on the context. No preamble."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=2500,
+            top_p=1,
+            stream=False
+        )
+        
+        response_text = completion.choices[0].message.content.strip()
+        if response_text.startswith("```"):
+            response_text = response_text.split("\n", 1)[1]
+            response_text = response_text.rsplit("```", 1)[0]
+        response_text = response_text.strip()
+        
+        mcqs_raw = json_lib.loads(response_text)
+        
+        mcqs = []
+        for i, q in enumerate(mcqs_raw):
+            mcqs.append({
+                "id": "q_" + str(i),
+                "question": q["question"],
+                "options": q["options"][:4],
+                "answer": q["answer"],
+                "topic": q.get("topic", "General")
+            })
+        
+        return mcqs
+        
+    except Exception as e:
+        print("[BACKEND] AI Quiz Generation failed: " + str(e))
+        return None
 
 
 def generate_questions(text, difficulty='medium'):
@@ -224,30 +305,42 @@ def upload_file():
         if file.filename != '':
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            print(f"[BACKEND] Saving file to: {filepath}")
             file.save(filepath)
-            if filename.endswith('.pdf'):
+            if filename.lower().endswith('.pdf'):
+                print(f"[BACKEND] Extracting text from PDF: {filename}")
                 extracted = extract_text_from_pdf(filepath)
-                text += "\n" + extracted
+                if extracted:
+                    print(f"[BACKEND] Successfully extracted {len(extracted)} characters.")
+                    text += "\n" + extracted
+                else:
+                    print("[BACKEND] WARNING: Extracted text was empty!")
             else:
+                print(f"[BACKEND] ERROR: Unsupported file extension: {filename}")
                 return jsonify({"error": "Unsupported file format. Please upload PDF."}), 400
                 
-    if not text.strip():
-        print("[BACKEND] ERROR: No valid text extracted for upload.")
-        return jsonify({"error": "No text or file provided"}), 400
-        
-    session['current_text'] = text
-    session.modified = True # Ensure session is saved
-    print(f"[BACKEND] Success: Uploaded {len(text)} characters to session.")
-    
     try:
-        history = list(user.history)
-        history.append("Uploaded Study Material")
-        user.history = history
-        db.session.commit()
+        if not text.strip():
+            print("[BACKEND] ERROR: No valid text extracted for upload.")
+            return jsonify({"error": "No text or file provided"}), 400
+            
+        session['current_text'] = text
+        session.modified = True 
+        print(f"[BACKEND] Success: Uploaded {len(text)} characters.")
+        
+        try:
+            history = list(user.history) if user else []
+            history.append("Uploaded Study Material")
+            if user:
+                user.history = history
+                db.session.commit()
+        except:
+            pass # Non-critical if history fails
+            
+        return jsonify({"message": "Content uploaded successfully", "char_count": len(text)})
     except Exception as e:
-        print(f"[BACKEND] User Profile Update Warning: {e}")
-    
-    return jsonify({"message": "Content uploaded successfully", "char_count": len(text)})
+        print(f"[BACKEND] CRITICAL UPLOAD ERROR: {e}")
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
 
 @app.route('/api/generate_notes', methods=['POST'])
 def generate_notes():
@@ -284,7 +377,17 @@ def generate_questions_route():
         return jsonify({"error": "No content found. Please upload first."}), 400
         
     diff = user.difficulty
-    mcqs, _ = generate_questions(text, difficulty=diff)
+    
+    # Try AI-powered quiz generation first
+    ai_mcqs = generate_questions_ai(text, num_questions=20)
+    
+    if ai_mcqs and len(ai_mcqs) > 0:
+        mcqs = ai_mcqs
+        print("[BACKEND] AI generated " + str(len(mcqs)) + " quiz questions successfully.")
+    else:
+        # Fallback to procedural method
+        mcqs, _ = generate_questions(text, difficulty=diff)
+        print("[BACKEND] Fallback: procedural method generated " + str(len(mcqs)) + " questions.")
     
     session['current_mcqs'] = mcqs
     
@@ -427,13 +530,13 @@ def chat():
             """
         
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question}
             ],
             temperature=0.5,
-            max_tokens=1024,
+            max_tokens=600,
             top_p=1,
             stream=False
         )
