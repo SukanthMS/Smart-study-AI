@@ -5,3 +5,4 @@ groq
 flask-sqlalchemy
 psycopg2-binary
 python-dotenv
+flask-session

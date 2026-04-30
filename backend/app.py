@@ -5,6 +5,7 @@ import json
 from collections import Counter
 from flask import Flask, render_template, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_session import Session
 from pypdf import PdfReader
 from werkzeug.utils import secure_filename
 from groq import Groq
@@ -15,6 +16,15 @@ load_dotenv()
 
 app = Flask(__name__, template_folder='../frontend/templates', static_folder='../frontend/static')
 app.secret_key = os.getenv('SECRET_KEY', 'super_secret_study_key')
+
+# ✅ Fix: Use server-side filesystem sessions (avoids 4KB cookie size limit)
+SESSION_FOLDER = os.path.join(app.root_path, 'flask_sessions')
+os.makedirs(SESSION_FOLDER, exist_ok=True)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = SESSION_FOLDER
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+Session(app)
 
 # Database Configuration
 db_url = os.getenv('DATABASE_URL')
