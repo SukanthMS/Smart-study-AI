@@ -139,6 +139,16 @@
             <div class="glass-panel section-container">
                 <h2><i class="fa-solid fa-graduation-cap"></i> Practice Quiz</h2>
                 <p>Test your knowledge and identify weak areas.</p>
+                
+                <div class="difficulty-selector mt-3 mb-3" style="display: flex; align-items: center; gap: 15px;">
+                    <label for="quiz-difficulty" style="font-weight: 500; font-size: 1.1rem;"><i class="fa-solid fa-layer-group text-cyan"></i> Difficulty Level:</label>
+                    <select id="quiz-difficulty" class="modern-input" style="max-width: 200px; padding: 10px; cursor: pointer;">
+                        <option value="easy">1. Easy</option>
+                        <option value="medium" selected>2. Medium</option>
+                        <option value="hard">3. Hard</option>
+                    </select>
+                </div>
+                
                 <button class="btn btn-primary mt-2" id="generate-quiz-btn">Generate Quiz</button>
                 
                 <div id="quiz-container" class="hidden mt-4">

@@ -290,28 +290,44 @@ function setupHandlers() {
     const genQuizBtn = document.getElementById('generate-quiz-btn');
     if (genQuizBtn) {
         genQuizBtn.addEventListener('click', async () => {
-            showLoader();
+            // Immediate button feedback
+            const originalLabel = genQuizBtn.innerHTML;
+            genQuizBtn.disabled = true;
+            genQuizBtn.innerHTML = '<i class="fa-solid fa-bolt fa-beat"></i> Generating 20 Questions…';
+
+            const selectedDifficulty = document.getElementById('quiz-difficulty')?.value || 'medium';
+
             try {
-                const res = await fetch('/api/generate_questions', { method: 'POST' });
+                const res = await fetch('/api/generate_questions', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ difficulty: selectedDifficulty })
+                });
                 const data = await res.json();
-                if(data.error) {
+                if (data.error) {
                     alert(data.error);
                     return;
                 }
-                if(data.mcqs && data.mcqs.length > 0) {
+                if (data.mcqs && data.mcqs.length > 0) {
                     let colorClass = 'text-cyan';
                     if (data.difficulty === 'hard') colorClass = 'text-purple';
                     if (data.difficulty === 'easy') colorClass = 'text-orange';
-                    
+
                     const header = document.querySelector('#quiz .massive-text');
                     if (header) {
-                        header.innerHTML = `Smart Quiz <span style="font-size: 1.2rem; vertical-align: middle; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);" class="${colorClass}"><i class="fa-solid fa-layer-group"></i> ${data.difficulty ? data.difficulty.toUpperCase() : 'MEDIUM'} MODE</span>`;
+                        header.innerHTML = `Smart Quiz <span style="font-size:1.2rem;vertical-align:middle;background:rgba(255,255,255,0.05);padding:5px 15px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);" class="${colorClass}"><i class="fa-solid fa-layer-group"></i> ${data.difficulty ? data.difficulty.toUpperCase() : 'MEDIUM'} MODE &nbsp;·&nbsp; ${data.mcqs.length} Questions</span>`;
                     }
                     renderQuiz(data.mcqs);
                 } else {
                     alert('Could not generate quiz. Try uploading more text!');
                 }
-            } catch(e) { console.error(e); } finally { hideLoader(); }
+            } catch (e) {
+                console.error(e);
+                alert('Failed to reach server. Please try again.');
+            } finally {
+                genQuizBtn.disabled = false;
+                genQuizBtn.innerHTML = originalLabel;
+            }
         });
     }
 
@@ -680,6 +696,14 @@ async function loadDashboard() {
             data.weak_areas.forEach(wa => {
                 wl.innerHTML += `<li><i class="fa-solid fa-triangle-exclamation text-orange pr-2"></i> <strong>${wa.topic}</strong> — answered wrong ${wa.count} time${wa.count > 1 ? 's' : ''}</li>`;
             });
+        }
+        
+        // Sync difficulty dropdown
+        if (data.difficulty) {
+            const diffSelect = document.getElementById('quiz-difficulty');
+            if (diffSelect) {
+                diffSelect.value = data.difficulty;
+            }
         }
 
     } catch(e) { console.error("Dashboard Load Error: ", e); }

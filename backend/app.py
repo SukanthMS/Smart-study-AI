@@ -225,71 +225,93 @@ STUDY MATERIAL:
         return None
 
 
-def generate_questions(text, difficulty='medium'):
-    import random
-    sentences = re.split(r'(?<=[.!?]) +', text.replace('\n', ' '))
-    mcqs = []
-    
+def generate_questions(text, difficulty='medium', num_questions=20):
+    """Generate exactly num_questions MCQs instantly using local TF-IDF logic."""
+    import random, copy
+
+    stop_words = {
+        "however", "furthermore", "therefore", "because", "although", "instead",
+        "during", "should", "would", "could", "through", "between", "without",
+        "against", "system", "example", "process", "various", "their", "which",
+        "there", "these", "those", "where", "while", "other", "about"
+    }
+
     if difficulty == 'easy':
-        min_len, max_len = 6, 20
-        target_criteria = lambda k, freq: -freq.get(k.lower(), 1)
         distractor_complexity = False
+        min_word_len = 4
     elif difficulty == 'hard':
-        min_len, max_len = 15, 45
-        target_criteria = lambda k, freq: freq.get(k.lower(), 1)
         distractor_complexity = True
-    else: # medium
-        min_len, max_len = 10, 30
-        target_criteria = lambda k, freq: freq.get(k.lower(), 1)
+        min_word_len = 7
+    else:
         distractor_complexity = False
-        
-    qualified_sentences = [s for s in sentences if len(s.split()) >= min_len and len(s.split()) <= max_len]
-    random.shuffle(qualified_sentences)
-    
-    all_words = re.findall(r'\b[A-Za-z]{6,}\b', text)
-    stop_words = {"however", "furthermore", "therefore", "because", "although", "instead", "during", "should", "would", "could", "through", "between", "without", "against", "system", "example", "process", "various"}
+        min_word_len = 5
+
+    # Split into sentences — allow shorter sentences if needed to get enough material
+    raw_sentences = re.split(r'(?<=[.!?]) +', text.replace('\n', ' '))
+    sentences = [s.strip() for s in raw_sentences if len(s.split()) >= 5]
+    random.shuffle(sentences)
+
+    all_words = re.findall(r'\b[A-Za-z]{4,}\b', text)
     valid_keywords = list(set([w for w in all_words if w.lower() not in stop_words]))
-    
-    word_freq = Counter([w.lower() for w in re.findall(r'\b[A-Za-z]{5,}\b', text) if w.lower() not in stop_words])
-    
-    for i, sentence in enumerate(qualified_sentences[:20]):
-        regex_pattern = r'\b[a-zA-Z]{5,}\b' if difficulty == 'easy' else r'\b[a-zA-Z]{7,}\b|\b[A-Z][a-z]{4,}\b'
-        words = re.findall(regex_pattern, sentence)
+    word_freq = Counter([w.lower() for w in all_words if w.lower() not in stop_words])
+
+    if distractor_complexity:
+        fillers = ["Methodology", "Optimization", "Architecture", "Validation", "Synthesis", "Framework", "Algorithm"]
+    else:
+        fillers = ["Computer", "System", "Machine", "Data", "Information", "Network", "Module"]
+
+    def make_question(sentence, q_index):
+        """Try to build an MCQ from a sentence; returns dict or None."""
+        word_pattern = rf'\b[A-Za-z]{{{min_word_len},}}\b'
+        words = re.findall(word_pattern, sentence)
         keywords = [w for w in words if w.lower() not in stop_words]
-        
-        if keywords:
-            target_keyword = min(keywords, key=lambda k: target_criteria(k, word_freq))
-            sent_words = [w for w in re.findall(r'\b[A-Za-z]{5,}\b', sentence) if w.lower() not in stop_words]
-            sent_words_sorted = sorted(sent_words, key=lambda k: word_freq.get(k.lower(), 1))
-            topic_tag = " ".join(sent_words_sorted[:2]).title() if len(sent_words_sorted) >= 2 else target_keyword.title()
-            
-            question_text = f"{sentence.replace(target_keyword, '_______', 1)}"
-            
-            options = [target_keyword]
-            distractor_pool = [k for k in valid_keywords if k.lower() != target_keyword.lower()]
-            random.shuffle(distractor_pool)
-            options.extend(distractor_pool[:3])
-            
-            if distractor_complexity:
-                fillers = ["Methodology", "Optimization", "Architecture", "Validation", "Synthesis"]
-            else:
-                fillers = ["Computer", "System", "Machine", "Data", "Information"]
-                
-            while len(options) < 4:
-                filler = random.choice(fillers)
-                if filler not in options: options.append(filler)
-            
-            random.shuffle(options)
-            
-            mcqs.append({
-                "id": f"q_{i}",
-                "question": question_text,
-                "options": options[:4],
-                "answer": target_keyword,
-                "topic": topic_tag
-            })
-            
-    return mcqs, []
+        if not keywords:
+            return None
+        # Pick the most distinctive keyword (highest frequency = more meaningful)
+        target_keyword = max(keywords, key=lambda k: word_freq.get(k.lower(), 0))
+        question_text = sentence.replace(target_keyword, '_______', 1)
+
+        options = [target_keyword]
+        distractor_pool = [k for k in valid_keywords if k.lower() != target_keyword.lower()]
+        random.shuffle(distractor_pool)
+        options.extend(distractor_pool[:3])
+        while len(options) < 4:
+            filler = random.choice(fillers)
+            if filler not in options:
+                options.append(filler)
+        random.shuffle(options)
+
+        sent_words = [w for w in re.findall(r'\b[A-Za-z]{4,}\b', sentence) if w.lower() not in stop_words]
+        topic_tag = ' '.join(sent_words[:2]).title() if len(sent_words) >= 2 else target_keyword.title()
+
+        return {
+            'id': f'q_{q_index}',
+            'question': question_text,
+            'options': options[:4],
+            'answer': target_keyword,
+            'topic': topic_tag
+        }
+
+    mcqs = []
+    for sentence in sentences:
+        if len(mcqs) >= num_questions:
+            break
+        q = make_question(sentence, len(mcqs))
+        if q:
+            mcqs.append(q)
+
+    # If still not enough, recycle existing questions with re-shuffled options
+    if mcqs and len(mcqs) < num_questions:
+        pool = copy.deepcopy(mcqs)
+        idx = 0
+        while len(mcqs) < num_questions:
+            recycled = copy.deepcopy(pool[idx % len(pool)])
+            recycled['id'] = f'q_{len(mcqs)}'
+            random.shuffle(recycled['options'])
+            mcqs.append(recycled)
+            idx += 1
+
+    return mcqs[:num_questions], []
 
 @app.route('/')
 def home():
@@ -375,27 +397,21 @@ def generate_questions_route():
     user = get_user()
     if not text:
         return jsonify({"error": "No content found. Please upload first."}), 400
-        
-    diff = user.difficulty
-    
-    # Try AI-powered quiz generation first
-    ai_mcqs = generate_questions_ai(text, num_questions=20)
-    
-    if ai_mcqs and len(ai_mcqs) > 0:
-        mcqs = ai_mcqs
-        print("[BACKEND] AI generated " + str(len(mcqs)) + " quiz questions successfully.")
-    else:
-        # Fallback to procedural method
-        mcqs, _ = generate_questions(text, difficulty=diff)
-        print("[BACKEND] Fallback: procedural method generated " + str(len(mcqs)) + " questions.")
-    
+
+    data = request.get_json(silent=True) or {}
+    diff = data.get('difficulty') or user.difficulty
+
+    # Instantly generate exactly 20 questions with no API delay
+    mcqs, _ = generate_questions(text, difficulty=diff, num_questions=20)
+    print(f"[BACKEND] Instantly generated {len(mcqs)} quiz questions (difficulty={diff}).")
+
     session['current_mcqs'] = mcqs
-    
+
     history = list(user.history)
     history.append(f"Generated a {diff.title()} Quiz")
     user.history = history
     db.session.commit()
-    
+
     return jsonify({"mcqs": mcqs, "difficulty": diff})
 
 @app.route('/api/submit_quiz', methods=['POST'])
@@ -560,7 +576,8 @@ def get_progress():
         "weak_areas": formatted_weak_areas,
         "xp": user.xp,
         "level": user.level,
-        "badges": user.badges
+        "badges": user.badges,
+        "difficulty": user.difficulty
     })
 
 if __name__ == '__main__':
